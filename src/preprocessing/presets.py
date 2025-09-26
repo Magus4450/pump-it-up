@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # Merge labels into train only
     train_df = pd.merge(train_values, train_labels, on="id", how="left")
 
-    preset_name = "log_transform+remove_correlated+feature_engineer"
+    preset_name = "log_transform+feature_engineer"
     pre = get_preset(preset_name, list(train_df.columns))
 
     train_processed = pre.fit_transform(train_df)

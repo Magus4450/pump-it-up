@@ -38,7 +38,7 @@ class Preprocessor:
         self.col_replacer = {}
 
         # remember columns removed during fit to mirror on transform
-        self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["status_group"]))
+        self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["construction_year", "date_recorded", "status_group"]))
 
     # -------------------- public API -------------------- #
 
