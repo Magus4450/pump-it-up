@@ -13,11 +13,13 @@ class Preprocessor:
 
     def __init__(
         self,
+        all_columns: List[str],
         log_transform_cols: List[str],
         remove_col_after_log: bool = False,
         cat_columns: List[str] = None,
         cat_col_cut_off: int = 10,
-        feature_engineer: bool = False
+        feature_engineer: bool = False,
+        
     ):
         self.log_transform_cols = log_transform_cols
         self.remove_col_after_log = remove_col_after_log
@@ -36,7 +38,7 @@ class Preprocessor:
         self.col_replacer = {}
 
         # remember columns removed during fit to mirror on transform
-        self.columns_dropped: List[str] = []
+        self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["construction_year", "date_recorded"]))
 
     # -------------------- public API -------------------- #
 
@@ -256,9 +258,10 @@ class Preprocessor:
     def _create_age_col(self, df: pd.DataFrame):
         df["construction_year"] = df["construction_year"].astype(int)
         df["date_recorded"] = pd.to_datetime(df["date_recorded"], format="%Y-%m-%d")
-        df["age"] = df["construction_year"] - df["date_recorded"].dt.year
+        df["age"] = np.abs(df["date_recorded"].dt.year - df["construction_year"])
 
         df.drop(columns=["construction_year", "date_recorded"], inplace=True)
+        # df.drop(columns=["date_recorded"], inplace=True)
 
     def _feature_engineering(self, df):
         self._create_age_col(df)

@@ -1,8 +1,8 @@
 from .preprocess import Preprocessor
-
+from typing import List
 
 AVAILABLE_COMBINATION = ["log_transform", "remove_correlated", "feature_engineer"]
-def get_preset(preset_name: str):
+def get_preset(preset_name: str, all_columns: List[str]):
 
     splits = preset_name.split("+")
     for split in splits:
@@ -11,6 +11,7 @@ def get_preset(preset_name: str):
     
 
     preprocessor_kwargs = {
+        "all_columns": all_columns,
         "remove_col_after_log": True,
         "cat_col_cut_off": 10,
         "cat_columns": []
@@ -33,8 +34,6 @@ def get_preset(preset_name: str):
 
 if __name__ == "__main__":
     import pandas as pd
-    preset_name = "log_transform+remove_correlated+feature_engineer"
-    pre = get_preset(preset_name)
 
     train_values = pd.read_csv("data/train_set_values.csv")
     train_labels = pd.read_csv("data/train_set_labels.csv")
@@ -43,6 +42,9 @@ if __name__ == "__main__":
     # Merge labels into train only
     train_df = pd.merge(train_values, train_labels, on="id", how="left")
 
+    preset_name = "log_transform+remove_correlated+feature_engineer"
+    pre = get_preset(preset_name, list(train_df.columns))
+    
     train_processed = pre.fit_transform(train_df)
     test_processed  = pre.transform(test_values)
 
