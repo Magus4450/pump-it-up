@@ -14,7 +14,8 @@ def get_preset(preset_name: str, all_columns: List[str]):
         "all_columns": all_columns,
         "remove_col_after_log": True,
         "cat_col_cut_off": 10,
-        "cat_columns": []
+        "cat_columns": [],
+        "log_transform_cols": []
     }
 
     if "log_transform" in preset_name:
@@ -44,7 +45,7 @@ if __name__ == "__main__":
 
     preset_name = "log_transform+remove_correlated+feature_engineer"
     pre = get_preset(preset_name, list(train_df.columns))
-    
+
     train_processed = pre.fit_transform(train_df)
     test_processed  = pre.transform(test_values)
 
