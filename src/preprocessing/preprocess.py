@@ -127,7 +127,7 @@ class Preprocessor:
         dummies_lst = []
         for col in self.cat_columns:
             df[col] = df[col].apply(self.col_replacer[col])
-            print(df[col].nunique())
+            # print(df[col].nunique())
 
             dummies = pd.get_dummies(df[col], prefix=f"{col}_", drop_first=True)
             dummies_lst.append(dummies)
