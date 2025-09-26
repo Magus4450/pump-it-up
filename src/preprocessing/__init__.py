@@ -1,5 +1,6 @@
 from .preprocess import Preprocessor
-
+from .presets import get_preset
 __all__ = [
-    "Preprocessor"
+    "Preprocessor",
+    "get_preset"
 ]

@@ -17,11 +17,13 @@ class Preprocessor:
         remove_col_after_log: bool = False,
         cat_columns: List[str] = None,
         cat_col_cut_off: int = 10,
+        feature_engineer: bool = False
     ):
         self.log_transform_cols = log_transform_cols
         self.remove_col_after_log = remove_col_after_log
         self.cat_columns = cat_columns
         self.cat_col_cut_off = cat_col_cut_off
+        self.feature_engineer = feature_engineer
 
         # learned during fit()
         self.global_modes: Dict[str, Any] = {}
@@ -85,7 +87,7 @@ class Preprocessor:
 
         # 4) Decide which columns to drop (mirror at transform)
         #    scheme_name and population were dropped in your original code
-        for col in ["scheme_name", "population", "gps_height"]:
+        for col in ["scheme_name", "population", "gps_height", "id"]:
             if col in df.columns:
                 self.columns_dropped.append(col)
 
@@ -135,7 +137,12 @@ class Preprocessor:
             df.drop(columns=[col], inplace=True)
 
         df = pd.concat([df, *dummies_lst], axis=1)
+
+        # G) Feature Engineering
+        if self.feature_engineer:
+            self._feature_engineering(df)
         return df
+    
 
     def fit_transform(self, train_df: pd.DataFrame) -> pd.DataFrame:
         return self.fit(train_df).transform(train_df)
@@ -232,11 +239,8 @@ class Preprocessor:
     def _log_transform(self, df: pd.DataFrame):
         for col in self.log_transform_cols:
             if col in df.columns:
-                # use np.log1p to be robust to zeros/negatives; fall back to NaN where invalid
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    df[f"log_{col}"] = np.where(
-                        df[col].notna(), np.log(df[col].astype(float)), np.nan
-                    )
+                df[df[col] < 0 ][col] = 0
+                df[f"log_{col}"] = np.log1p(df[col].astype(float))
                 if self.remove_col_after_log and col in df.columns:
                     df.drop(columns=[col], inplace=True)
 
@@ -247,6 +251,18 @@ class Preprocessor:
         replace_w_other = lambda x: x if x in top_vcs.index else 'Other'
         
         return replace_w_other
+    
+
+    def _create_age_col(self, df: pd.DataFrame):
+        df["construction_year"] = df["construction_year"].astype(int)
+        df["date_recorded"] = pd.to_datetime(df["date_recorded"], format="%Y-%m-%d")
+        df["age"] = df["construction_year"] - df["date_recorded"].dt.year
+
+        df.drop(columns=["construction_year", "date_recorded"], inplace=True)
+
+    def _feature_engineering(self, df):
+        self._create_age_col(df)
+
 
 # -------------------- Example usage -------------------- #
 if __name__ == "__main__":
@@ -264,6 +280,7 @@ if __name__ == "__main__":
         remove_col_after_log=False,   # keep originals unless you want to drop
         cat_columns=["funder", "installer", "wpt_name", "basin", "subvillage", "region", "region_code", "district_code", "lga", "ward", "public_meeting", "scheme_management",  "permit", "extraction_type", "extraction_type_group", "extraction_type_class", "management", "management_group", "payment", "payment_type", "water_quality", "quality_group", "quantity", "quantity_group", "source", "source_type", "source_class", "waterpoint_type", "waterpoint_type_group", "recorded_by"],               # (encoder not implemented here)
         cat_col_cut_off=10,
+        feature_engineer=True
     )
 
     # Fit on TRAIN, then transform both TRAIN and TEST with the same stats
@@ -273,5 +290,5 @@ if __name__ == "__main__":
     print("Train shape:", train_processed.shape)
     print("Test  shape:", test_processed.shape)
 
-    # print(train_processed.isna().sum())
-    # print(test_processed.isna().sum())
+    print(sum(train_processed.isna().sum()))
+    print(sum(test_processed.isna().sum()))
