@@ -1,51 +1,46 @@
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-def create_logistic_regression_model(seed=42):
+def create_and_return_all_models(X_train, seed=42):
     """
-    Returns an untrained Logistic Regression model pipeline.
+    Initializes and returns a dictionary of all the models to be tested.
+    Each model is a self-contained scikit-learn Pipeline.
     """
-    return Pipeline(steps=[
-        ('scaler', StandardScaler()),
-        ('classifier', LogisticRegression(random_state=seed, max_iter=1000, n_jobs=-1))
-    ])
+    
+    # Define a preprocessing step to scale numerical features
+    # This will be the first step in each model's pipeline
+    numeric_features = X_train.select_dtypes(include=np.number).columns.tolist()
+    preprocessor = ColumnTransformer(
+        transformers=[('scaler', StandardScaler(), numeric_features)],
+        remainder='passthrough'  # Keep other (e.g., one-hot encoded) columns
+    )
 
-def create_decision_tree_model(seed=42):
-    """
-    Returns an untrained DecisionTreeClassifier.
-    """
-    return DecisionTreeClassifier(random_state=seed)
-
-def create_random_forest_model(seed=42):
-    """
-    Returns an untrained RandomForestClassifier.
-    """
-    return RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1)
-
-def create_gradient_boosting_model(seed=42):
-    """
-    Returns an untrained GradientBoostingClassifier. This is another type of ensemble model.
-    """
-    return GradientBoostingClassifier(n_estimators=100, random_state=seed)
-
-def create_xgboost_model(seed=42):
-    """
-    Returns an untrained XGBClassifier.
-    """
-    return XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=seed, n_jobs=-1)
-
-def create_and_return_all_models(seed=42):
-    """
-    Returns dictionary of every model
-    """
-    return {
-        "logistic_regression": create_logistic_regression_model(seed),
-        "decision_tree": create_decision_tree_model(seed),
-        "random_forest": create_random_forest_model(seed),
-        "gradient_boosting": create_gradient_boosting_model(seed),
-        "xgboost": create_xgboost_model(seed),
+    models = {
+        "logistic_regression": Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', LogisticRegression(random_state=seed, max_iter=1000, class_weight='balanced'))
+        ]),
+        "decision_tree": Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', DecisionTreeClassifier(random_state=seed, class_weight='balanced'))
+        ]),
+        "random_forest": Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', RandomForestClassifier(random_state=seed, n_jobs=-1, class_weight='balanced_subsample'))
+        ]),
+        "gradient_boosting": Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', GradientBoostingClassifier(random_state=seed))
+        ]),
+        "xgboost": Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=seed, n_jobs=-1))
+        ]),
     }
+    return models
