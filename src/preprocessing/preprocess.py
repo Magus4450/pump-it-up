@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
-
+from sklearn.preprocessing import LabelEncoder
 
 class Preprocessor:
     """
@@ -36,7 +36,7 @@ class Preprocessor:
         self.bad_lat = -2.000000e-08
         self.bad_lon = 0.0
         self.col_replacer = {}
-
+        self.target_le = LabelEncoder()
         # remember columns removed during fit to mirror on transform
         self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["construction_year", "date_recorded", "status_group"]))
 
@@ -97,11 +97,13 @@ class Preprocessor:
         for col in self.cat_columns:
             self.col_replacer[col] = self._get_col_replacer(df[col])
 
-        # print(self.col_replacer)
+       # 6) Label Encode
+        if "status_group" in df.columns:
+            self.target_le.fit(df["status_group"])
 
         return self
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, df: pd.DataFrame, test:bool = False) -> pd.DataFrame:
         df = df.copy(deep=True)
 
         # A) Simple categorical imputations with global modes
@@ -117,6 +119,9 @@ class Preprocessor:
 
         # C) Drop high-NA or undesired columns (mirror training decision)
         for col in self.columns_dropped:
+            if test:
+                if col == "id":
+                    continue
             if col in df.columns:
                 df.drop(columns=[col], inplace=True)
 
@@ -143,9 +148,15 @@ class Preprocessor:
         # G) Feature Engineering
         if self.feature_engineer:
             self._feature_engineering(df)
-        return df
-    
 
+        df.drop(columns=["construction_year", "date_recorded"], inplace=True)
+        
+
+        # H) Label Encode
+        if "status_group" in df.columns:
+            df["status_group"] = self.target_le.transform(df["status_group"])
+
+        return df
     def fit_transform(self, train_df: pd.DataFrame) -> pd.DataFrame:
         return self.fit(train_df).transform(train_df)
 
@@ -260,7 +271,6 @@ class Preprocessor:
         df["date_recorded"] = pd.to_datetime(df["date_recorded"], format="%Y-%m-%d")
         df["age"] = np.abs(df["date_recorded"].dt.year - df["construction_year"])
 
-        df.drop(columns=["construction_year", "date_recorded"], inplace=True)
         # df.drop(columns=["date_recorded"], inplace=True)
 
     def _feature_engineering(self, df):
@@ -290,8 +300,8 @@ if __name__ == "__main__":
     train_processed = pre.fit_transform(train_df)
     test_processed  = pre.transform(test_values)
 
-    print("Train shape:", train_processed.shape)
-    print("Test  shape:", test_processed.shape)
+    # print("Train shape:", train_processed.shape)
+    # print("Test  shape:", test_processed.shape)
 
-    print(sum(train_processed.isna().sum()))
-    print(sum(test_processed.isna().sum()))
+    # print(sum(train_processed.isna().sum()))
+    # print(sum(test_processed.isna().sum()))

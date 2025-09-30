@@ -2,18 +2,19 @@ from .preprocess import Preprocessor
 from typing import List
 
 AVAILABLE_COMBINATION = ["log_transform", "remove_correlated", "feature_engineer"]
-def get_preset(preset_name: str, all_columns: List[str]):
-
-    splits = preset_name.split("+")
-    for split in splits:
-        if split not in AVAILABLE_COMBINATION:
-            raise Exception(f"{split} not among {AVAILABLE_COMBINATION}")
+def get_preset(preset_name: str, all_columns: List[str], n_cols: int = 10):
+    
+    if preset_name != "":
+        splits = preset_name.split("+")
+        for split in splits:
+            if split not in AVAILABLE_COMBINATION:
+                raise Exception(f"{split} not among {AVAILABLE_COMBINATION}")
     
 
     preprocessor_kwargs = {
         "all_columns": all_columns,
         "remove_col_after_log": True,
-        "cat_col_cut_off": 10,
+        "cat_col_cut_off": n_cols,
         "cat_columns": [],
         "log_transform_cols": []
     }
@@ -29,7 +30,7 @@ def get_preset(preset_name: str, all_columns: List[str]):
     if "feature_engineer" in preset_name:
         preprocessor_kwargs["feature_engineer"] = True
 
-    print(preprocessor_kwargs)
+    # print(preprocessor_kwargs)
     preprocessor = Preprocessor(**preprocessor_kwargs)
     return preprocessor
 
