@@ -26,7 +26,7 @@ def train_and_evaluate_baseline(preset_name, model_name, seed=42, model_kwargs={
     X = train_processed.drop("status_group", axis=1)
     y = train_processed["status_group"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=seed)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratify=y, random_state=seed)
 
 
     lr = LogisticRegression(**model_kwargs)
@@ -82,17 +82,17 @@ def train_w_hpam_search_and_eval(model, preset_name, model_name, param_dist, see
 
     save_file(f"results.pkl", res)
 
-    y_pred = best_model.predict(test_processed.drop(columns=["id"]))
+    # y_pred = best_model.predict(test_processed.drop(columns=["id"]))
 
-    # Build dataframe with id and predicted labels
-    pred_df = pd.DataFrame({
-        "id": test_processed["id"].values,
-        "status_group": y_pred
-    })
-    pred_df["status_group"] = processor.target_le.inverse_transform(pred_df["status_group"])
-    pred_df.to_csv(f"{model_name}_sub.csv", index=False)
+    # # Build dataframe with id and predicted labels
+    # pred_df = pd.DataFrame({
+    #     "id": test_processed["id"].values,
+    #     "status_group": y_pred
+    # })
+    # pred_df["status_group"] = processor.target_le.inverse_transform(pred_df["status_group"])
+    # pred_df.to_csv(f"{model_name}_sub.csv", index=False)
 
-    pred_df.head()
+    # pred_df.head()
    
     return train_f1, test_f1, best_model
 

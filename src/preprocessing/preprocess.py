@@ -38,7 +38,7 @@ class Preprocessor:
         self.col_replacer = {}
         self.target_le = LabelEncoder()
         # remember columns removed during fit to mirror on transform
-        self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["construction_year", "date_recorded", "status_group"]))
+        self.columns_dropped: List[str] = list(set(all_columns) - set(log_transform_cols + cat_columns + ["construction_year", "date_recorded", "status_group", "latitude", "longitude"]))
 
     # -------------------- public API -------------------- #
 
